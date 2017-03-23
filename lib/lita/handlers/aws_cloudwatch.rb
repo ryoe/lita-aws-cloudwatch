@@ -70,6 +70,10 @@ module Lita
         messages << "Reason: #{reason}"
         room = fetch_room(account_id)
         send_message_to_room(messages.join("\n"), room)
+        if name.nil? || name.empty?
+          spotlight_message = "Unexpected message:\n```#{params_data.to_s}```"
+          send_message_to_room(spotlight_message, room)
+        end
       end
 
       def redis_key_for_room
