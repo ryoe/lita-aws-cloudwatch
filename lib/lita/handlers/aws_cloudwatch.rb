@@ -60,20 +60,36 @@ module Lita
       def alert_notification!
         data = JSON.parse(params_data["Message"])
         account_id = data["AWSAccountId"]
+        if data["AlarmName"].present?
+          messages = build_alert_messages(data)
+        else
+          messages = build_event_messages(data)
+        end
+        messages.unshift("Account: #{accounts[account_id] || account_id}")
+        room = fetch_room(account_id)
+        send_message_to_room(messages.join("\n"), room)
+      end
+
+      def build_alert_messages(data)
         name = data["AlarmName"]
         state = data["NewStateValue"]
         reason = data["NewStateReason"]
         messages = []
-        messages << "Account: #{accounts[account_id] || account_id}"
         messages << "State: #{state}"
         messages << "Name: #{name}"
         messages << "Reason: #{reason}"
-        room = fetch_room(account_id)
-        send_message_to_room(messages.join("\n"), room)
-        if name.nil? || name.empty?
-          spotlight_message = "Unexpected message:\n```#{params_data.to_s}```"
-          send_message_to_room(spotlight_message, room)
-        end
+        messages
+      end
+
+      def build_event_messages(data)
+        event_source = data["Event Source"]
+        source_id = data["Source ID"]
+        event_message = data["Event Message"]
+        messages = []
+        messages << "Event Source: #{event_source}"
+        messages << "Source ID: #{source_id}"
+        messages << "Event Message: #{event_message}"
+        messages
       end
 
       def redis_key_for_room
