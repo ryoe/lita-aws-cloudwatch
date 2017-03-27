@@ -60,10 +60,11 @@ module Lita
       def alert_notification!
         data = JSON.parse(params_data["Message"])
         account_id = data["AWSAccountId"]
-        if data["AlarmName"].present?
-          messages = build_alert_messages(data)
-        else
+        is_not_alarm = data["AlarmName"].nil? || data["AlarmName"].empty?
+        if is_not_alarm
           messages = build_event_messages(data)
+        else
+          messages = build_alert_messages(data)
         end
         messages.unshift("Account: #{accounts[account_id] || account_id}")
         room = fetch_room(account_id)
